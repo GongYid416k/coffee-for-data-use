@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- 允許 inline script/style -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <title>來速咖啡即時抽獎</title>
+  <style>
+    body {
+      font-family: "微軟正黑體", sans-serif;
+      background: #f7f2eb;
+      color: #3e2f1c;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+    }
+    /* 新增：預設隱藏“已抽過”提示 */
+    #already {
+      display: none;
+      font-size: 1em;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .result-box {
+      border: 2px solid #6f4e37;
+      border-radius: 12px;
+      padding: 30px;
+      background: #fffaf6;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .result-box h1 { font-size: 2em; margin-bottom: 10px; }
+    .result-box .time { font-size: 0.9em; color: #555; margin-bottom: 20px; }
+    .result-box p { font-size: 1.2em; margin: 10px 0; }
+    .note {
+      font-size: 1em;
+      color: #8a2b06;
+      margin: 20px 0;
+      line-height: 1.5;
+    }
+    .btn {
+      padding: 12px 24px;
+      background: #6f4e37;
+      color: #fff;
+      border-radius: 8px;
+      font-size: 1.1em;
+      text-decoration: none;
+    }
+    .btn:hover { background: #5a3f2a; }
+  </style>
+</head>
+<body>
+
+  <div id="already">※ 您已經抽過獎，結果如下：</div>
+  <div class="result-box" id="resultBox">載入中…</div>
+
+  <div class="note">
+    請先<span style="font-weight:bold;">截圖</span>上述結果，再點擊下方按鈕填寫表單。<br>
+    （至加油站兌換中杯美式乙杯，請出示中獎截圖及之前咖啡消費明細或發票）
+  </div>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      // —— 請替換這兩項 —— 
+      const formBase = "https://docs.google.com/forms/d/e/1FAIpQLSfZNiHHdxGeqTfiOMAmvnGNsU-lKiuZ65KjAgO0eeL27GnjZg/viewform";
+      const entryKey = "entry.1234567890"; // ← 換成你的「您是否中獎？」欄位 entry ID
+      // ——————————————————
+
+      // 讀取 localStorage
+      let data = null;
+      try {
+        data = JSON.parse(localStorage.getItem("lotteryData"));
+      } catch (e) { /* ignore */ }
+
+      const alreadyDiv = document.getElementById("already");
+
+      // 第一次或尚未存過結果：抽獎並存進 localStorage
+      if (!data || typeof data.isWinner === "undefined") {
+        const isWinner = Math.random() < 0.3; // 30% 機率可自行調整
+        const now = new Date();
+        const pad = n => String(n).padStart(2, "0");
+        const timeStr =
+          `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ` +
+          `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        data = { isWinner, timeStr };
+        localStorage.setItem("lotteryData", JSON.stringify(data));
+      } else {
+        // 若已有記錄，顯示“已抽過”提示
+        alreadyDiv.style.display = "block";
+      }
+
+      // 顯示抽獎結果
+      const box = document.getElementById("resultBox");
+      if (data.isWinner) {
+        box.innerHTML = `
+          <h1>🎉 恭喜你中獎了！</h1>
+          <div class="time">開獎時間：${data.timeStr}</div>
+          <p>填寫表單即可兌換免費中杯美式乙杯</p>`;
+      } else {
+        box.innerHTML = `
+          <h1>😢 很可惜這次沒中獎喔！</h1>
+          <div class="time">開獎時間：${data.timeStr}</div>
+          <p>填寫問卷後可獲得中杯美式5元折價券</p>`;
+      }
+
+      // 建立「填表」按鈕
+      const btn = document.createElement("a");
+      btn.className = "btn";
+      btn.textContent = "👉 點我填表單";
+      btn.href = `${formBase}?${entryKey}=${data.isWinner ? "中獎" : "未中"}`;
+      btn.target = "_blank";
+      document.body.appendChild(btn);
+    });
+  </script>
+
+</body>
+</html>
